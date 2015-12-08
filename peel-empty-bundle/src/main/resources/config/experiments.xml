@@ -11,5 +11,6 @@
     <import resource="systems.xml"/>
     <!-- wordcount experiment beans -->
     <import resource="experiments.wordcount.xml"/>
+    <import resource="yarn.experiments.xml"/>
 
 </beans>

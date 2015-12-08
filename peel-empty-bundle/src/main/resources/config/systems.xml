@@ -15,6 +15,12 @@
     * Overridden system beans
     *************************************************************************-->
 
+    <bean id="yarn-2.7.1" class="org.peelframework.hadoop.beans.system.Yarn" parent="system">
+        <constructor-arg name="version" value="2.7.1"/>
+        <constructor-arg name="configKey" value="hadoop-2" />
+        <constructor-arg name="lifespan" value="SUITE"/>
+    </bean>
+
     <!-- Flink (overridden 'flink-0.9.0' bean that depends on 'hdfs-2.7.1') -->
     <bean id="flink-0.9.0" class="org.peelframework.flink.beans.system.Flink" parent="system">
         <constructor-arg name="version" value="0.9.0"/>
@@ -23,6 +29,7 @@
         <constructor-arg name="dependencies">
             <set value-type="org.peelframework.core.beans.system.System">
                 <ref bean="hdfs-2.7.1"/>
+                <ref bean="yarn-2.7.1"/>
             </set>
         </constructor-arg>
     </bean>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--************************************************************************
+    * Data Generators
+    *************************************************************************-->
+
+    <bean id="datagen.words" class="org.peelframework.flink.beans.job.FlinkJob">
+        <constructor-arg name="runner" ref="flink-0.9.0"/>
+        <constructor-arg name="command">
+            <value><![CDATA[
+              -v -c de.tuberlin.cit.yarn.experiments.datagen.flink.WordGenerator        \
+              ${app.path.datagens}/yarn-experiments-bundle-datagens-1.0-SNAPSHOT.jar        \
+              ${system.default.config.parallelism.total}                           \
+              ${datagen.tuples.per.task}                                           \
+              ${datagen.dictionary.dize}                                           \
+              ${datagen.data-distribution}                                         \
+              ${system.hadoop-2.path.input}/rubbish.txt
+            ]]>
+            </value>
+        </constructor-arg>
+    </bean>
+
+    <!--************************************************************************
+    * Data Sets
+    *************************************************************************-->
+
+    <bean id="dataset.words.static" class="org.peelframework.core.beans.data.CopiedDataSet">
+        <constructor-arg name="src" value="${app.path.datasets}/rubbish.txt"/>
+        <constructor-arg name="dst" value="${system.hadoop-2.path.input}/rubbish.txt"/>
+        <constructor-arg name="fs" ref="hdfs-2.7.1"/>
+    </bean>
+
+    <bean id="dataset.words.generated" class="org.peelframework.core.beans.data.GeneratedDataSet">
+        <constructor-arg name="src" ref="datagen.words"/>
+        <constructor-arg name="dst" value="${system.hadoop-2.path.input}/rubbish.txt"/>
+        <constructor-arg name="fs" ref="hdfs-2.7.1"/>
+    </bean>
+
+    <!--************************************************************************
+    * Experiments
+    *************************************************************************-->
+
+    <!-- Yarn Experiment output -->
+    <bean id="yarn-experiment.output" class="org.peelframework.core.beans.data.ExperimentOutput">
+        <constructor-arg name="path" value="${system.hadoop-2.path.output}/yarn-experiment"/>
+        <constructor-arg name="fs" ref="hdfs-2.7.1"/>
+    </bean>
+
+    <!-- wordcount experiment with fixed dataset (flink on yarn) -->
+    <bean id="experiment.flink.wordcount" parent="experiment.flink-0.9.0" abstract="true">
+        <constructor-arg name="command">
+            <value><![CDATA[
+                -v                      \
+                -m yarn-cluster -yn 1               \
+                ${system.flink.path.home}/examples/flink-java-examples-0.9.0-WordCount.jar
+            ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg name="outputs">
+            <set value-type="org.peelframework.core.beans.data.ExperimentOutput">
+                <ref bean="wordcount.output"/>
+            </set>
+        </constructor-arg>
+    </bean>
+
+    <bean id="experiment.flink.wordcount2" parent="experiment.flink-0.9.0" abstract="true">
+        <constructor-arg name="command">
+            <value><![CDATA[
+                -v                      \
+                -m yarn-cluster -yn 1               \
+                ${system.flink.path.home}/examples/flink-java-examples-0.9.0-WordCount.jar
+            ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg name="outputs">
+            <set value-type="org.peelframework.core.beans.data.ExperimentOutput">
+                <ref bean="wordcount.output"/>
+            </set>
+        </constructor-arg>
+    </bean>
+
+    <!--************************************************************************
+    * Suites
+    *************************************************************************-->
+
+    <!-- suite for local development and testing -->
+    <bean id="yarn-experiments.default" class="org.peelframework.core.beans.experiment.ExperimentSuite">
+        <constructor-arg name="experiments">
+            <list value-type="org.peelframework.core.beans.experiment.Experiment">
+                <bean parent="experiment.flink.wordcount">
+                    <constructor-arg name="name" value="yarn.flink"/>
+                    <constructor-arg name="inputs">
+                        <set>
+                            <ref bean="dataset.words.static" />
+                        </set>
+                    </constructor-arg>
+                    <constructor-arg name="config" value=""/>
+                </bean>
+                <bean parent="experiment.flink.wordcount2">
+                    <constructor-arg name="name" value="yarn.flink"/>
+                    <constructor-arg name="inputs">
+                        <set>
+                            <ref bean="dataset.words.static" />
+                        </set>
+                    </constructor-arg>
+                    <constructor-arg name="config" value=""/>
+                </bean>
+            </list>
+        </constructor-arg>
+    </bean>
+
+</beans>
